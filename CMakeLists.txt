@@ -12,6 +12,26 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 find_package(QT NAMES Qt6 Qt5 REQUIRED COMPONENTS Widgets LinguistTools)
 find_package(Qt${QT_VERSION_MAJOR} REQUIRED COMPONENTS Widgets LinguistTools)
 
+find_path(QSCINTILLA_INCLUDE_DIR
+    NAMES Qsci/qsciscintilla.h
+    PATHS
+        /usr/include
+        /usr/local/include
+        /usr/include/x86_64-linux-gnu/qt6
+)
+
+find_library(QSCINTILLA_LIBRARY
+    NAMES qscintilla2_qt6
+    PATHS /usr/lib/x86_64-linux-gnu /usr/lib /usr/local/lib
+)
+
+if(NOT QSCINTILLA_INCLUDE_DIR OR NOT QSCINTILLA_LIBRARY)
+    message(FATAL_ERROR
+        "QScintilla not found. Install it with:\n"
+        "  sudo apt install libqscintilla2-qt6-dev"
+    )
+endif()
+
 set(TS_FILES harrington-ide_en_CA.ts)
 
 set(PROJECT_SOURCES
@@ -49,7 +69,8 @@ else()
     qt5_create_translation(QM_FILES ${CMAKE_SOURCE_DIR} ${TS_FILES})
 endif()
 
-target_link_libraries(harrington-ide PRIVATE Qt${QT_VERSION_MAJOR}::Widgets)
+target_include_directories(harrington-ide PRIVATE ${QSCINTILLA_INCLUDE_DIR})
+target_link_libraries(harrington-ide PRIVATE Qt${QT_VERSION_MAJOR}::Widgets ${QSCINTILLA_LIBRARY})
 
 # Qt for iOS sets MACOSX_BUNDLE_GUI_IDENTIFIER automatically since Qt 6.1.
 # If you are developing for iOS or macOS you should consider setting an
