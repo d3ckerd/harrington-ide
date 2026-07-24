@@ -36,5 +36,8 @@ private:
     void applyLexerFor(QsciScintilla* editor, const QString& filePath);
     void applyLexerForCurrentFile();
     void closeTab(int index);
+
+    // for file saving/loading
+    void openFile();
 };
 #endif // MAINWINDOW_H

@@ -1,6 +1,10 @@
 #include "mainwindow.h"
+#include <QFileDialog>
 #include <QToolButton>
 #include <QMessageBox>
+#include <QStandardPaths>
+#include <QFile>
+#include <QTextStream>
 #include "./ui_mainwindow.h"
 #include <Qsci/qsciscintilla.h>
 
@@ -10,12 +14,14 @@ MainWindow::MainWindow(QWidget *parent)
 {
     ui->setupUi(this);
 
+    // tab widgets
     m_tab = new QTabWidget(this);
     m_tab -> setTabsClosable(true);
     m_tab -> setMovable(true);
     connect(m_tab, &QTabWidget::tabCloseRequested, this, &MainWindow::closeTab);
     setCentralWidget(m_tab);
 
+    // + icon for new files
     auto* newTabButton = new QToolButton(this);
     newTabButton->setText("+");
     newTabButton->setToolTip("New Tab");
@@ -24,8 +30,24 @@ MainWindow::MainWindow(QWidget *parent)
         newEditorTab("untitled");
     });
     m_tab->setCornerWidget(newTabButton, Qt::TopRightCorner);
-
     newEditorTab("Untitled");
+
+    // file menu + open file action
+    // looks for a file menu, if there link to exists otherwise create new
+    QMenu *fileMenu = nullptr;
+    for (QAction *action : menuBar() -> actions()) {
+        if (action -> menu() && action -> text().contains("File")) {
+            fileMenu = action -> menu();
+        }
+    } 
+    if (!fileMenu) {
+        fileMenu = menuBar() -> addMenu(("&File"));
+    }
+
+    QAction *openAction = new QAction("&Open...", this);
+    openAction -> setShortcut(QKeySequence::Open); // Ctrl+O
+    connect(openAction, &QAction::triggered, this, &MainWindow::openFile);
+    fileMenu -> addAction(openAction);
 }
 
 MainWindow::~MainWindow()
@@ -63,7 +85,7 @@ void MainWindow::closeTab(int index) {
     QMessageBox::StandardButton result = QMessageBox::Discard;
 
     if (m_modified.value(editor, false)) {
-        auto result = QMessageBox::question(
+        result = QMessageBox::question(
             this, "Unsaved changes",
             "This file has unsaved changes. Save before closing?",
             QMessageBox::Save | QMessageBox::Discard | QMessageBox::Cancel
@@ -85,6 +107,42 @@ void MainWindow::closeTab(int index) {
         newEditorTab("untitled"); // replace the last tab with a fresh blank one, might be some form of home tab in the future
     }
     m_tab -> removeTab(index);
-    editor -> deleteLater(); // learn more about this function
+    // delete later waits for all ui actions/events before deleting memory
+    editor -> deleteLater(); 
 }
 
+void MainWindow::openFile() {
+    
+    // path to WSL directory
+    QString linuxHome = QStandardPaths::writableLocation(QStandardPaths::HomeLocation);
+    
+    // config dialog object
+    QFileDialog dialog(this);
+    dialog.setWindowTitle(tr("Open WSL File"));
+    dialog.setDirectory(linuxHome); // starting folder
+    dialog.setFileMode(QFileDialog::ExistingFile); // only allowing files that exist
+    dialog.setNameFilter(tr("All Files (*)")); // filter for file extensions
+
+    // forces qt to render own ui instead of relying on linux packages on my windows machine
+    dialog.setOption(QFileDialog::DontUseNativeDialog, true);
+
+    // open dialog -> check if clicked open/ok
+    if (dialog.exec()) {
+
+        // retrive selected file
+        QString fileName = dialog.selectedFiles().at(0);
+        
+        // here is where file input logic should be, reading existing into editor
+        qDebug() << "successfully opened file at: " << fileName;
+    }
+
+    else {
+        qDebug() << "user canceled file selection";
+    }
+
+}
+
+//TODO: Add file saving and loading
+// Advanced text and sytax like autocompletion of lines.. 
+// cleanup ui.. maybe add a home screen if no file is open..
+// add sidebar to track files in directory that project is in
