@@ -68,3 +68,6 @@ Testing/
 .cache/
 .qtcreator/
 CMakeLists.txt.user
+
+# theme added from public repo: https://github.com/ColinDuquesnoy/QDarkStyleSheet
+/qdarkstyle
