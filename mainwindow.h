@@ -30,7 +30,6 @@ private:
     // with two sepserate maps
     QMap<QsciScintilla*, QString> m_filePaths;
     QMap<QsciScintilla*, bool> m_modified;
-
     QsciScintilla* currentEditor() const;
     QsciScintilla* newEditorTab(const QString& title);
     void applyLexerFor(QsciScintilla* editor, const QString& filePath);
@@ -39,5 +38,7 @@ private:
 
     // for file saving/loading
     void openFile();
+    bool saveFile(QsciScintilla* editor);
+    bool saveFileAs(QsciScintilla* editor);
 };
 #endif // MAINWINDOW_H
