@@ -7,6 +7,9 @@
 #include <QFontDatabase>
 #include <QTextStream>
 #include <QFileInfo>
+#include <QTreeView>
+#include <QFileSystemModel>
+#include <QMouseEvent>
 #include "./ui_mainwindow.h"
 #include <Qsci/qsciscintilla.h>
 
@@ -24,6 +27,9 @@ MainWindow::MainWindow(QWidget *parent)
     connect(m_tab, &QTabWidget::tabCloseRequested, this, &MainWindow::closeTab);
     setCentralWidget(m_tab);
 
+    // setting up window to make cleaner
+    setWindowFlags(windowFlags() | Qt::FramelessWindowHint);
+
     // + icon for new files
     auto* newTabButton = new QToolButton(this);
     newTabButton->setText("+");
@@ -34,6 +40,7 @@ MainWindow::MainWindow(QWidget *parent)
     });
     m_tab->setCornerWidget(newTabButton, Qt::TopRightCorner);
     newEditorTab("untitled");
+
 
     // file menu + open file action
     // looks for a file menu, if there link to exists otherwise create new
@@ -51,6 +58,14 @@ MainWindow::MainWindow(QWidget *parent)
     openAction -> setShortcut(QKeySequence::Open); // Ctrl+O
     connect(openAction, &QAction::triggered, this, &MainWindow::openFile);
     fileMenu -> addAction(openAction);
+
+    /*
+    // to open a directory.. not just single file
+    QAction *openDirAction = new QAction("Open &Project Directory...", this);
+    connect(openDirAction, &QAction::triggered, this, &MainWindow::openDirectory);
+    fileMenu -> addAction(openDirAction);
+
+     */
 
     // file menu save action
     QAction *saveAction = new QAction("&Save...", this);
@@ -73,35 +88,52 @@ QsciScintilla* MainWindow::currentEditor() const {
 
 QsciScintilla* MainWindow::newEditorTab(const QString& title) {
     auto* editor = new QsciScintilla(m_tab);
-    editor -> setMarginType(0, QsciScintilla::NumberMargin);
-    editor -> setMarginWidth(0, "0000");
-    editor -> setAutoIndent(true);
-    editor -> setTabWidth(4);
 
-    connect(editor, &QsciScintilla::textChanged, this, [this, editor]() {
-        m_modified[editor] = true;
-    });
-
-    m_tab -> addTab(editor, title);
-    m_tab -> setCurrentWidget(editor);
-
-    // adding font to different editors...
+    // setting font
     QFont codeFont("TypeWriter", 11);
     codeFont.setStyleHint(QFont::TypeWriter);
-    // making sure font exists in the database (dynamic memory cache)
     if (!QFontDatabase::systemFont(QFontDatabase::FixedFont).family().isEmpty()) {
         codeFont = QFontDatabase::systemFont(QFontDatabase::FixedFont);
         codeFont.setPointSize(11);
     }
-    editor -> setFont(codeFont);
+    editor->setFont(codeFont);
 
-    // adding some whtespace 
-    editor -> setMarginWidth(1, 10);
+    QColor bgColor(30, 30, 30);
+    QColor textColor(220, 220, 220);
 
-    // a very subtle line highlight showing where typing
-    editor -> setCaretLineVisible(true);
-    editor -> setCaretLineBackgroundColor(QColor(200, 200, 200));
+    // Set background + text color
+    editor->SendScintilla(QsciScintilla::SCI_STYLESETBACK, QsciScintilla::STYLE_DEFAULT, bgColor);
+    editor->SendScintilla(QsciScintilla::SCI_STYLESETFORE, QsciScintilla::STYLE_DEFAULT, textColor);
+    editor->SendScintilla(QsciScintilla::SCI_STYLECLEARALL); // clears old states, forces what defined above
+
+    // line highlighting
+    editor->setCaretForegroundColor(Qt::white); // Ensures you can see your text cursor on a dark background
+    editor->setCaretLineVisible(true);
+    editor->setCaretLineBackgroundColor(QColor(45, 45, 45)); 
+
+    // margins/geo
+    editor->setMarginsBackgroundColor(QColor(40, 40, 40));
+    editor->setMarginsForegroundColor(QColor(150, 150, 150));
+    editor->setMarginType(0, QsciScintilla::NumberMargin);
+    editor->setMarginWidth(0, "0000");
+    editor->setMarginWidth(1, 10);
+    
+    editor->setAutoIndent(true);
+    editor->setTabWidth(4);
+
+    // modification states
+    connect(editor, &QsciScintilla::textChanged, this, [this, editor]() {
+        m_modified[editor] = true;
+    });
+
+    // adding to tab
+    m_tab->addTab(editor, title);
+    m_tab->setCurrentWidget(editor);
+
     return editor;
+
+    // future addition
+    //editor -> addDockWidget(Qt::LeftDockWidgetArea, m_projectDock);
 }
 
 void MainWindow::closeTab(int index) {
@@ -215,6 +247,8 @@ bool MainWindow::saveFile(QsciScintilla* editor) {
         m_tab -> setTabText(index, title);
     }
 
+    // make sure that if saved doesnt prompt for saving when close
+    m_modified[editor] = false;
     return true;
 }
 
@@ -235,8 +269,31 @@ bool MainWindow::saveFileAs(QsciScintilla* editor) {
     return saveFile(editor);
 }
 
-//TODO: 
+void MainWindow::openDirectory() {
+    QString linuxHome = QStandardPaths::writableLocation(QStandardPaths::HomeLocation);
+
+    // this line grabs the directory user choses.. have to then link to the dock widget and tree
+    QString dirPath = QFileDialog::getExistingDirectory(this, "Open Project Directory", linuxHome, QFileDialog::ShowDirsOnly);
+
+    //TODO: fill in the rest of function.. grab directory and read in all files... then create a tab for each and have a project tab on left of screen
+}
+
+
+// added for know since no more fullscreen button 
+void MainWindow::keyPressEvent(QKeyEvent *event) {
+    if (event -> key() == Qt::Key_F11) {
+        if (isFullScreen()) {
+            showNormal();
+        } else {
+            showFullScreen();
+        }
+    }
+}
+
+// TODO: 
 // Advanced text and sytax like autocompletion of lines.. 
-// cleanup ui.. maybe add a home screen if no file is open..
 // add sidebar to track files in directory that project is in
-// if writing () or {}, want autofill in for those
+// think about support for specific files .cpp/.h/.hpp/.py, how
+// should I handle those
+
+

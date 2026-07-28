@@ -19,6 +19,11 @@ public:
     explicit MainWindow(QWidget *parent = nullptr);
     ~MainWindow() override;
 
+private slots: 
+    void openDirectory();
+    void keyPressEvent(QKeyEvent *event);
+    //void onSidebarFileDoubleClicked(const QModelIndex &index);
+
 private:
     Ui::MainWindow *ui;
     QsciScintilla* m_editor = nullptr;
@@ -40,5 +45,12 @@ private:
     void openFile();
     bool saveFile(QsciScintilla* editor);
     bool saveFileAs(QsciScintilla* editor);
+
+    // for project side bar
+    void loadFileIntoEditor(const QString &filePath);
+
+    QDockWidget *m_projectDock = nullptr;
+    //QTreeView *m_projectTreeView = nullptr;
+    //QFileSystemModel *m_fileModel = nullptr; 
 };
 #endif // MAINWINDOW_H
