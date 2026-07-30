@@ -10,6 +10,7 @@
 #include <QTreeView>
 #include <QFileSystemModel>
 #include <QMouseEvent>
+#include <QtGlobal>
 #include "./ui_mainwindow.h"
 #include <Qsci/qsciscintilla.h>
 
@@ -19,6 +20,8 @@ MainWindow::MainWindow(QWidget *parent)
     , ui(new Ui::MainWindow)
 {
     ui->setupUi(this);
+
+    // will add helper functions to clean up the constructor...
 
     // tab widgets
     m_tab = new QTabWidget(this);
@@ -290,6 +293,31 @@ void MainWindow::keyPressEvent(QKeyEvent *event) {
     }
 }
 
+
+void MainWindow::mousePressEvent(QMouseEvent *event) {
+    qDebug() << "Im here lowkey";
+    if (event -> button() == Qt::LeftButton) {
+        qDebug() << "Im here lowkey too";
+        m_dragging = true;
+        m_dragPosition = event -> globalPosition().toPoint() - frameGeometry().topLeft();
+        event -> accept();
+    }
+}
+
+void MainWindow::mouseMoveEvent(QMouseEvent *event) {
+    if (m_dragging && (event -> buttons() & Qt::LeftButton)) {
+        qDebug() << "why am i not moving";
+        move(event -> globalPosition().toPoint() - m_dragPosition);
+        event -> accept();
+    }
+}
+
+void MainWindow::mouseReleaseEvent(QMouseEvent *event) {
+    if (event -> button() == Qt::LeftButton) {
+        m_dragging = false; 
+        event -> accept();
+    }
+}
 // TODO: 
 // Advanced text and sytax like autocompletion of lines.. 
 // add sidebar to track files in directory that project is in

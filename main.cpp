@@ -8,6 +8,8 @@
 
 int main(int argc, char *argv[])
 {
+    // since running on linux it blocks moving frame with move.. have to run this command to allow
+    qputenv("QT_QPA_PLATFORM", "xcb");
     QApplication a(argc, argv);
 
     // adding qdarkstyle theme from directory
