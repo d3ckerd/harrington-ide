@@ -75,8 +75,6 @@ MainWindow::MainWindow(QWidget *parent)
         saveFile(currentEditor());
     });
     fileMenu -> addAction(saveAction);
-
-    // test
 }
 
 MainWindow::~MainWindow()
@@ -292,26 +290,10 @@ void MainWindow::keyPressEvent(QKeyEvent *event) {
     }
 }
 
-// below have overriden event handlers from qt framework
-// captures mouse click relative to top left corner
-void MainWindow::mousePressEvent(QMouseEvent *event) {
-    if (event -> button() == Qt::LeftButton) {
-        m_dragPosition = event -> globalPosition().toPoint() - frameGeometry().topLeft();
-        event -> accept();
-    }
-}
-
-// moves window based on mouse movements with offeset
-void MainWindow::mouseMoveEvent(QMouseEvent *event) {
-    // buttons & left button allow for others to be clicked while dragging
-    if (event -> buttons() & Qt::LeftButton) {
-        move(event -> globalPosition().toPoint() - m_dragPosition);
-        event -> accept();
-    }
-}
 // TODO: 
 // Advanced text and sytax like autocompletion of lines.. 
 // add sidebar to track files in directory that project is in
 // think about support for specific files .cpp/.h/.hpp/.py, how
 // should I handle those
+
 

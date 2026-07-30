@@ -19,11 +19,6 @@ public:
     explicit MainWindow(QWidget *parent = nullptr);
     ~MainWindow() override;
 
-protected:
-    void mousePressEvent(QMouseEvent *event) override;
-    void mouseMoveEvent(QMouseEvent *event) override;
-
-
 private slots: 
     void openDirectory();
     void keyPressEvent(QKeyEvent *event);
@@ -57,6 +52,5 @@ private:
     QDockWidget *m_projectDock = nullptr;
     //QTreeView *m_projectTreeView = nullptr;
     //QFileSystemModel *m_fileModel = nullptr; 
-    QPoint m_dragPosition; // stores offset
 };
 #endif // MAINWINDOW_H
