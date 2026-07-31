@@ -4,6 +4,9 @@
 #include <QMainWindow>
 
 class QsciScintilla;
+class QTreeView;
+class QFileSystemModel;
+class QDockWidget;
 
 QT_BEGIN_NAMESPACE
 namespace Ui {
@@ -27,24 +30,25 @@ protected:
 private slots: 
     void openDirectory();
     void keyPressEvent(QKeyEvent *event);
-    //void onSidebarFileDoubleClicked(const QModelIndex &index);
+    void onFileTreeDoubleClicked(const QModelIndex &index);
 
 private:
     Ui::MainWindow *ui;
     QsciScintilla* m_editor = nullptr;
     QString m_currentFilePath;
 
-    QTabWidget* m_tab = nullptr;
-    // Qtab widget knows about widgets and tab titles, not about 
-    // which file it is or if its been edited, we have to track that 
-    // with two sepserate maps
-    QMap<QsciScintilla*, QString> m_filePaths;
-    QMap<QsciScintilla*, bool> m_modified;
+    // helper functions for constructor
+    void tabInit();
+    void plusButton();
+    void actionLinks();
+
+    // editor functions
     QsciScintilla* currentEditor() const;
     QsciScintilla* newEditorTab(const QString& title);
     void applyLexerFor(QsciScintilla* editor, const QString& filePath);
     void applyLexerForCurrentFile();
     void closeTab(int index);
+    void setupFileTree();
 
     // for file saving/loading
     void openFile();
@@ -54,9 +58,16 @@ private:
     // for project side bar
     void loadFileIntoEditor(const QString &filePath);
 
-    QDockWidget *m_projectDock = nullptr;
-    //QTreeView *m_projectTreeView = nullptr;
-    //QFileSystemModel *m_fileModel = nullptr; 
+    QDockWidget *m_fileDock = nullptr;
+    QTreeView *m_fileTree = nullptr;
+    QFileSystemModel *m_fileModel = nullptr; 
+
+    QTabWidget* m_tab = nullptr;
+    // Qtab widget knows about widgets and tab titles, not about 
+    // which file it is or if its been edited, we have to track that 
+    // with two sepserate maps
+    QMap<QsciScintilla*, QString> m_filePaths;
+    QMap<QsciScintilla*, bool> m_modified;
 
     bool m_dragging = false;
     QPoint m_dragPosition;

@@ -11,28 +11,45 @@
 #include <QFileSystemModel>
 #include <QMouseEvent>
 #include <QtGlobal>
+#include <QDockWidget>
 #include "./ui_mainwindow.h"
 #include <Qsci/qsciscintilla.h>
 
-// init and connects all different functionalites of the ide in constructor
+// TODO: 
+// Advanced text and sytax like autocompletion of lines.. 
+// add sidebar to track files in directory that project is in
+// think about support for specific files .cpp/.h/.hpp/.py, how
+// should I handle those
+
+
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent)
     , ui(new Ui::MainWindow)
 {
     ui->setupUi(this);
+    setupFileTree();
+    tabInit();
+    plusButton();
+    actionLinks();
+}
 
-    // will add helper functions to clean up the constructor...
+MainWindow::~MainWindow()
+{
+    delete ui;
+}
 
-    // tab widgets
+// CONSTRUCTOR HELPER FUNCTIONS
+
+void MainWindow::tabInit() {
     m_tab = new QTabWidget(this);
     m_tab -> setTabsClosable(true);
     m_tab -> setMovable(true);
     connect(m_tab, &QTabWidget::tabCloseRequested, this, &MainWindow::closeTab);
     setCentralWidget(m_tab);
-
-    // setting up window to make cleaner
     setWindowFlags(windowFlags() | Qt::FramelessWindowHint);
+}
 
+void MainWindow::plusButton() {
     // + icon for new files
     auto* newTabButton = new QToolButton(this);
     newTabButton->setText("+");
@@ -43,8 +60,9 @@ MainWindow::MainWindow(QWidget *parent)
     });
     m_tab->setCornerWidget(newTabButton, Qt::TopRightCorner);
     newEditorTab("untitled");
+}
 
-
+void MainWindow::actionLinks() {
     // file menu + open file action
     // looks for a file menu, if there link to exists otherwise create new
     QMenu *fileMenu = nullptr;
@@ -80,10 +98,29 @@ MainWindow::MainWindow(QWidget *parent)
     fileMenu -> addAction(saveAction);
 }
 
-MainWindow::~MainWindow()
-{
-    delete ui;
+
+void MainWindow::setupFileTree() {
+
+    QString rootPath = QStandardPaths::writableLocation(QStandardPaths::HomeLocation);
+
+    m_fileModel = new QFileSystemModel(this);
+    m_fileModel -> setRootPath(rootPath);
+
+    m_fileTree = new QTreeView(this);
+    m_fileTree -> setModel(m_fileModel);
+    m_fileTree -> setRootIndex(m_fileModel -> index(rootPath));
+
+    connect(m_fileTree, &QTreeView::doubleClicked, this, &MainWindow::onFileTreeDoubleClicked);
+
+    // add a block for removing the unwanted status in the file tree, only need to see directories and file names.. wondering if instead of having holy directory displayed should have a button to choose one
+    m_fileDock = new QDockWidget("Project View", this);
+    m_fileDock -> setWidget(m_fileTree);
+    m_fileDock->setFeatures(QDockWidget::DockWidgetMovable | QDockWidget::DockWidgetClosable);
+
+    addDockWidget(Qt::LeftDockWidgetArea, m_fileDock);
 }
+
+// EDITOR FUNCTIONS
 
 QsciScintilla* MainWindow::currentEditor() const {
     return qobject_cast<QsciScintilla*>(m_tab -> currentWidget());
@@ -132,11 +169,9 @@ QsciScintilla* MainWindow::newEditorTab(const QString& title) {
     // adding to tab
     m_tab->addTab(editor, title);
     m_tab->setCurrentWidget(editor);
+    addDockWidget(Qt::LeftDockWidgetArea, m_fileDock);
 
     return editor;
-
-    // future addition
-    //editor -> addDockWidget(Qt::LeftDockWidgetArea, m_projectDock);
 }
 
 void MainWindow::closeTab(int index) {
@@ -175,6 +210,9 @@ void MainWindow::closeTab(int index) {
     m_tab -> removeTab(index);
     editor -> deleteLater(); // delete later waits for all ui actions/events before deleting memory
 }
+
+
+// FILE I/O FUNCTIONS
 
 void MainWindow::openFile() {
     
@@ -281,7 +319,7 @@ void MainWindow::openDirectory() {
     //TODO: fill in the rest of function.. grab directory and read in all files... then create a tab for each and have a project tab on left of screen
 }
 
-
+// OVERRIDEN EVENT HANDLERS
 // added for know since no more fullscreen button 
 void MainWindow::keyPressEvent(QKeyEvent *event) {
     if (event -> key() == Qt::Key_F11) {
@@ -295,22 +333,21 @@ void MainWindow::keyPressEvent(QKeyEvent *event) {
 
 
 void MainWindow::mousePressEvent(QMouseEvent *event) {
-    qDebug() << "Im here lowkey";
     if (event -> button() == Qt::LeftButton) {
-        qDebug() << "Im here lowkey too";
         m_dragging = true;
         m_dragPosition = event -> globalPosition().toPoint() - frameGeometry().topLeft();
         event -> accept();
     }
 }
 
+
 void MainWindow::mouseMoveEvent(QMouseEvent *event) {
     if (m_dragging && (event -> buttons() & Qt::LeftButton)) {
-        qDebug() << "why am i not moving";
         move(event -> globalPosition().toPoint() - m_dragPosition);
         event -> accept();
     }
 }
+
 
 void MainWindow::mouseReleaseEvent(QMouseEvent *event) {
     if (event -> button() == Qt::LeftButton) {
@@ -318,10 +355,27 @@ void MainWindow::mouseReleaseEvent(QMouseEvent *event) {
         event -> accept();
     }
 }
-// TODO: 
-// Advanced text and sytax like autocompletion of lines.. 
-// add sidebar to track files in directory that project is in
-// think about support for specific files .cpp/.h/.hpp/.py, how
-// should I handle those
 
 
+void MainWindow::onFileTreeDoubleClicked(const QModelIndex& index) {
+
+	// let tree expand/collapse - dont try to open them
+	if (m_fileModel -> isDir(index)) {
+		return;
+	}
+	
+	QString filePath = m_fileModel -> filePath(index);
+	
+	QFile file(filePath);
+	if (!file.open(QIODevice::ReadOnly | QIODevice::Text)) {
+		QMessageBox::warning(this, "Error", "Could not open file" + filePath);
+		return;
+	}
+	
+	QTextStream in (&file);
+	QString content = in.readAll();
+	QsciScintilla* editor = newEditorTab(QFileInfo(filePath).fileName());
+	editor -> setText(content);
+	m_filePaths[editor] = filePath;
+	m_modified[editor] = false;
+}
