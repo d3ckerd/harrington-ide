@@ -49,6 +49,7 @@ private:
     void applyLexerForCurrentFile();
     void closeTab(int index);
     void setupFileTree();
+    void openProjectFolder(const QString& path);
 
     // for file saving/loading
     void openFile();

@@ -80,13 +80,12 @@ void MainWindow::actionLinks() {
     connect(openAction, &QAction::triggered, this, &MainWindow::openFile);
     fileMenu -> addAction(openAction);
 
-    /*
+    
     // to open a directory.. not just single file
     QAction *openDirAction = new QAction("Open &Project Directory...", this);
     connect(openDirAction, &QAction::triggered, this, &MainWindow::openDirectory);
     fileMenu -> addAction(openDirAction);
 
-     */
 
     // file menu save action
     QAction *saveAction = new QAction("&Save...", this);
@@ -101,16 +100,16 @@ void MainWindow::actionLinks() {
 
 void MainWindow::setupFileTree() {
 
-    QString rootPath = QStandardPaths::writableLocation(QStandardPaths::HomeLocation);
-
+    // not setting root path off the bat for file tree so full linux directory isnt displayed
     m_fileModel = new QFileSystemModel(this);
-    m_fileModel -> setRootPath(rootPath);
-
     m_fileTree = new QTreeView(this);
     m_fileTree -> setModel(m_fileModel);
-    m_fileTree -> setRootIndex(m_fileModel -> index(rootPath));
-
     connect(m_fileTree, &QTreeView::doubleClicked, this, &MainWindow::onFileTreeDoubleClicked);
+
+    // hiding other pats of tree (size/type/date)... got clutered
+    for (int i = 1; i < m_fileModel -> columnCount(); ++i) {
+        m_fileTree -> hideColumn(i);
+    }
 
     // add a block for removing the unwanted status in the file tree, only need to see directories and file names.. wondering if instead of having holy directory displayed should have a button to choose one
     m_fileDock = new QDockWidget("Project View", this);
@@ -118,6 +117,18 @@ void MainWindow::setupFileTree() {
     m_fileDock->setFeatures(QDockWidget::DockWidgetMovable | QDockWidget::DockWidgetClosable);
 
     addDockWidget(Qt::LeftDockWidgetArea, m_fileDock);
+}
+
+
+// function to acutally do the opening of the project folder 
+void MainWindow::openProjectFolder(const QString& path) {
+    if (path.isEmpty()) {
+        return;
+    }
+
+    m_fileModel -> setRootPath(path);
+    m_fileTree -> setRootIndex(m_fileModel -> index(path));
+    m_fileDock -> setWindowTitle(QFileInfo(path).fileName());
 }
 
 // EDITOR FUNCTIONS
@@ -312,11 +323,9 @@ bool MainWindow::saveFileAs(QsciScintilla* editor) {
 
 void MainWindow::openDirectory() {
     QString linuxHome = QStandardPaths::writableLocation(QStandardPaths::HomeLocation);
-
     // this line grabs the directory user choses.. have to then link to the dock widget and tree
     QString dirPath = QFileDialog::getExistingDirectory(this, "Open Project Directory", linuxHome, QFileDialog::ShowDirsOnly);
-
-    //TODO: fill in the rest of function.. grab directory and read in all files... then create a tab for each and have a project tab on left of screen
+    openProjectFolder(dirPath);
 }
 
 // OVERRIDEN EVENT HANDLERS
