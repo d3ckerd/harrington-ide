@@ -12,6 +12,7 @@
 #include <QMouseEvent>
 #include <QtGlobal>
 #include <QDockWidget>
+#include <QHBoxLayout>
 #include "./ui_mainwindow.h"
 #include <Qsci/qsciscintilla.h>
 
@@ -31,6 +32,7 @@ MainWindow::MainWindow(QWidget *parent)
     tabInit();
     plusButton();
     actionLinks();
+	setupTitleBar();
 }
 
 MainWindow::~MainWindow()
@@ -120,6 +122,43 @@ void MainWindow::setupFileTree() {
 }
 
 
+void MainWindow::setupTitleBar() {
+	auto* titleBar = new QWidget(this);
+	titleBar -> setFixedHeight(32);
+	
+	auto* layout = new QHBoxLayout(titleBar);
+	layout -> setContentsMargins(0, 0, 0, 0);
+	layout -> setSpacing(0);
+	
+	// moving existing file menu into this layour
+	layout -> addWidget(menuBar());
+	layout -> addStretch();
+	
+	auto* minimizeBtn = new QToolButton(this);
+	minimizeBtn -> setText("¯\\_(ツ)_/¯");
+	minimizeBtn -> setFixedSize(40, 32);
+	connect(minimizeBtn, &QToolButton::clicked, this, &MainWindow::showMinimized);
+
+	auto* maximizeBtn = new QToolButton(this);
+	maximizeBtn -> setText("ʕ•ᴥ•ʔ");
+	maximizeBtn -> setFixedSize(40, 32);
+	connect(maximizeBtn, &QToolButton::clicked, this, [this]() {
+		isMaximized() ? showNormal() : showMaximized();
+	});
+
+	auto* closeBtn = new QToolButton(this);
+	closeBtn -> setText("ಠ╭╮ಠ");
+	closeBtn -> setFixedSize(40, 32);
+	connect(closeBtn, &QToolButton::clicked, this, &QWidget::close);
+
+	layout -> addWidget(minimizeBtn);
+	layout -> addWidget(maximizeBtn);
+	layout -> addWidget(closeBtn);
+	
+	setMenuWidget(titleBar);
+}
+
+
 // function to acutally do the opening of the project folder 
 void MainWindow::openProjectFolder(const QString& path) {
     if (path.isEmpty()) {
@@ -153,24 +192,24 @@ QsciScintilla* MainWindow::newEditorTab(const QString& title) {
     QColor textColor(220, 220, 220);
 
     // Set background + text color
-    editor->SendScintilla(QsciScintilla::SCI_STYLESETBACK, QsciScintilla::STYLE_DEFAULT, bgColor);
-    editor->SendScintilla(QsciScintilla::SCI_STYLESETFORE, QsciScintilla::STYLE_DEFAULT, textColor);
-    editor->SendScintilla(QsciScintilla::SCI_STYLECLEARALL); // clears old states, forces what defined above
+    editor -> SendScintilla(QsciScintilla::SCI_STYLESETBACK, QsciScintilla::STYLE_DEFAULT, bgColor);
+    editor -> SendScintilla(QsciScintilla::SCI_STYLESETFORE, QsciScintilla::STYLE_DEFAULT, textColor);
+    editor -> SendScintilla(QsciScintilla::SCI_STYLECLEARALL); // clears old states, forces what defined above
 
     // line highlighting
-    editor->setCaretForegroundColor(Qt::white); // Ensures you can see your text cursor on a dark background
-    editor->setCaretLineVisible(true);
-    editor->setCaretLineBackgroundColor(QColor(45, 45, 45)); 
+    editor -> setCaretForegroundColor(Qt::white); // Ensures you can see your text cursor on a dark background
+    editor -> setCaretLineVisible(true);
+    editor -> setCaretLineBackgroundColor(QColor(45, 45, 45)); 
 
     // margins/geo
-    editor->setMarginsBackgroundColor(QColor(40, 40, 40));
-    editor->setMarginsForegroundColor(QColor(150, 150, 150));
-    editor->setMarginType(0, QsciScintilla::NumberMargin);
-    editor->setMarginWidth(0, "0000");
-    editor->setMarginWidth(1, 10);
+    editor -> setMarginsBackgroundColor(QColor(40, 40, 40));
+    editor -> setMarginsForegroundColor(QColor(150, 150, 150));
+    editor -> setMarginType(0, QsciScintilla::NumberMargin);
+    editor -> setMarginWidth(0, "0000");
+    editor -> setMarginWidth(1, 10);
     
-    editor->setAutoIndent(true);
-    editor->setTabWidth(4);
+    editor -> setAutoIndent(true);
+    editor -> setTabWidth(4);
 
     // modification states
     connect(editor, &QsciScintilla::textChanged, this, [this, editor]() {
@@ -180,7 +219,6 @@ QsciScintilla* MainWindow::newEditorTab(const QString& title) {
     // adding to tab
     m_tab->addTab(editor, title);
     m_tab->setCurrentWidget(editor);
-    addDockWidget(Qt::LeftDockWidgetArea, m_fileDock);
 
     return editor;
 }

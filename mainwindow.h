@@ -41,6 +41,7 @@ private:
     void tabInit();
     void plusButton();
     void actionLinks();
+	void setupTitleBar();
 
     // editor functions
     QsciScintilla* currentEditor() const;

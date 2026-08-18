@@ -18,17 +18,19 @@ find_path(QSCINTILLA_INCLUDE_DIR
         /usr/include
         /usr/local/include
         /usr/include/x86_64-linux-gnu/qt6
+        /usr/include/qt6
 )
 
 find_library(QSCINTILLA_LIBRARY
     NAMES qscintilla2_qt6
-    PATHS /usr/lib/x86_64-linux-gnu /usr/lib /usr/local/lib
+    PATHS /usr/lib64 /usr/lib/x86_64-linux-gnu /usr/lib /usr/local/lib
 )
 
 if(NOT QSCINTILLA_INCLUDE_DIR OR NOT QSCINTILLA_LIBRARY)
     message(FATAL_ERROR
         "QScintilla not found. Install it with:\n"
-        "  sudo apt install libqscintilla2-qt6-dev"
+        "  sudo apt install libqscintilla2-qt6-dev\n"
+        "  Fedora: sudo dnf install qscintilla-qt6-devel"
     )
 endif()
 
