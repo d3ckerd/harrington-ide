@@ -1,4 +1,5 @@
 #include "mainwindow.h"
+#include "titlebar.h"
 #include <QFileDialog>
 #include <QToolButton>
 #include <QMessageBox>
@@ -15,13 +16,14 @@
 #include <QHBoxLayout>
 #include "./ui_mainwindow.h"
 #include <Qsci/qsciscintilla.h>
+#include <Qsci/qscilexercpp.h>
 
 // TODO: 
-// Advanced text and sytax like autocompletion of lines.. 
-// add sidebar to track files in directory that project is in
-// think about support for specific files .cpp/.h/.hpp/.py, how
-// should I handle those
-
+// with close button added, need to loop through all open editors and make sure no changes needed to be saved
+// auto complete of brackets
+// fix ui of file menu and make it so when open program no text editor open, some form of homescreen
+// add the ability to type something like "harrington ." (or wtv dir) in a linux cli, and have the ide opened up with the specified directory
+// make the close scope not active on if/elses (just functions) and make it not white
 
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent)
@@ -123,7 +125,7 @@ void MainWindow::setupFileTree() {
 
 
 void MainWindow::setupTitleBar() {
-	auto* titleBar = new QWidget(this);
+	auto* titleBar = new TitleBar(this);
 	titleBar -> setFixedHeight(32);
 	
 	auto* layout = new QHBoxLayout(titleBar);
@@ -135,19 +137,19 @@ void MainWindow::setupTitleBar() {
 	layout -> addStretch();
 	
 	auto* minimizeBtn = new QToolButton(this);
-	minimizeBtn -> setText("¯\\_(ツ)_/¯");
+	minimizeBtn -> setText("—");
 	minimizeBtn -> setFixedSize(40, 32);
 	connect(minimizeBtn, &QToolButton::clicked, this, &MainWindow::showMinimized);
 
 	auto* maximizeBtn = new QToolButton(this);
-	maximizeBtn -> setText("ʕ•ᴥ•ʔ");
+	maximizeBtn -> setText("☐");
 	maximizeBtn -> setFixedSize(40, 32);
 	connect(maximizeBtn, &QToolButton::clicked, this, [this]() {
 		isMaximized() ? showNormal() : showMaximized();
 	});
 
 	auto* closeBtn = new QToolButton(this);
-	closeBtn -> setText("ಠ╭╮ಠ");
+	closeBtn -> setText("✕");
 	closeBtn -> setFixedSize(40, 32);
 	connect(closeBtn, &QToolButton::clicked, this, &QWidget::close);
 
@@ -191,10 +193,38 @@ QsciScintilla* MainWindow::newEditorTab(const QString& title) {
     QColor bgColor(30, 30, 30);
     QColor textColor(220, 220, 220);
 
-    // Set background + text color
-    editor -> SendScintilla(QsciScintilla::SCI_STYLESETBACK, QsciScintilla::STYLE_DEFAULT, bgColor);
-    editor -> SendScintilla(QsciScintilla::SCI_STYLESETFORE, QsciScintilla::STYLE_DEFAULT, textColor);
+    QsciLexerCPP *lexer = new QsciLexerCPP(editor);
+
+    lexer -> setPaper(bgColor, 0);
+    lexer -> setColor(textColor, 0);
+    lexer -> setFont(codeFont, 0);
+
+    editor -> setLexer(lexer);
     editor -> SendScintilla(QsciScintilla::SCI_STYLECLEARALL); // clears old states, forces what defined above
+
+    // check actual # for styles used, dont have the enum (making it so background for all diff stysles/QsciLexerCPP enums is the same) 
+    for (int style = 0; style <= 135; ++style) {
+        lexer->setPaper(bgColor, style);
+        lexer->setColor(textColor, style);
+        lexer->setFont(codeFont, style);
+    }
+
+    // setting lexer colors for different components of c++ code, very open to change
+    lexer -> setDefaultFont(codeFont);
+    lexer -> setPaper(bgColor);
+    lexer -> setDefaultColor(textColor);
+	lexer -> setColor(QColor(181, 206, 168), QsciLexerCPP::Number);
+    lexer -> setColor(QColor(0, 128, 0), QsciLexerCPP::Comment);
+    lexer -> setColor(QColor(0, 128, 0), QsciLexerCPP::CommentLine);
+    lexer -> setColor(QColor(0, 128, 0), QsciLexerCPP::CommentDoc);
+    lexer -> setColor(QColor(215, 58, 73), QsciLexerCPP::Keyword);
+    lexer -> setColor(QColor(163, 61, 61), QsciLexerCPP::DoubleQuotedString);
+    lexer -> setColor(QColor(163, 61, 61), QsciLexerCPP::SingleQuotedString);
+	lexer -> setColor(QColor(255, 255, 255), QsciLexerCPP::UnclosedString);
+    lexer -> setColor(QColor(170, 186, 153), QsciLexerCPP::Identifier);
+	lexer -> setColor(QColor(215, 225, 225), QsciLexerCPP::Operator);
+	lexer -> setColor(QColor(220, 220, 100), QsciLexerCPP::TaskMarker);
+    lexer -> setColor(QColor(78, 201, 176), QsciLexerCPP::PreProcessor);
 
     // line highlighting
     editor -> setCaretForegroundColor(Qt::white); // Ensures you can see your text cursor on a dark background
@@ -210,11 +240,13 @@ QsciScintilla* MainWindow::newEditorTab(const QString& title) {
     
     editor -> setAutoIndent(true);
     editor -> setTabWidth(4);
+    editor -> setFolding(QsciScintilla::BoxedTreeFoldStyle);
 
     // modification states
     connect(editor, &QsciScintilla::textChanged, this, [this, editor]() {
         m_modified[editor] = true;
     });
+
 
     // adding to tab
     m_tab->addTab(editor, title);

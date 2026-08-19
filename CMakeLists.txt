@@ -41,6 +41,7 @@ set(PROJECT_SOURCES
         mainwindow.cpp
         mainwindow.h
         mainwindow.ui
+        titlebar.h
         ${TS_FILES}
         qdarkstyle/dark/darkstyle.qrc
 )
